@@ -14,6 +14,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		6D41A6C32BFC277B005364A1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6D6CFF4E2BE6A0B2002DF69A /* vinylSync.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = vinylSync.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D6CFF512BE6A0B2002DF69A /* vinylSyncApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = vinylSyncApp.swift; sourceTree = "<group>"; };
 		6D6CFF532BE6A0B2002DF69A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -51,6 +52,7 @@
 		6D6CFF502BE6A0B2002DF69A /* vinylSync */ = {
 			isa = PBXGroup;
 			children = (
+				6D41A6C32BFC277B005364A1 /* Info.plist */,
 				6D6CFF512BE6A0B2002DF69A /* vinylSyncApp.swift */,
 				6D6CFF532BE6A0B2002DF69A /* ContentView.swift */,
 				6D6CFF552BE6A0B3002DF69A /* Assets.xcassets */,
@@ -274,6 +276,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"vinylSync/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = vinylSync/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Uses microphone to detect audio for matching";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -303,6 +306,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"vinylSync/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = vinylSync/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Uses microphone to detect audio for matching";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
