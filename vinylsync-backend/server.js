@@ -1,93 +1,56 @@
-require('dotenv').config();
+const https = require('https');
+const fs = require('fs');
 const express = require('express');
-const session = require('express-session');
 const passport = require('passport');
-const OAuth2Strategy = require('passport-oauth2');
-const axios = require('axios');
+const OAuth2Strategy = require('passport-oauth2').Strategy;
+require('dotenv').config();
 
 const app = express();
 const port = 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(session({ secret: 'SECRET', resave: false, saveUninitiated: true }));
-app.use(passport.initialize());
-app.use(passport.session());
+// SSL/TLS options - replace with your certificate paths
+const options = {
+  key: fs.readFileSync('./server.key'),
+  cert: fs.readFileSync('./server.cert')
+};
 
-passport.use(new OAuth2Strategy({
-    authorizationURL: 'https://www.last.fm/api/auth/?api_key=' + process.env.LASTFM_API_KEY,
-    tokenURL: 'https://www.last.fm/api/auth/?api_key=' + process.env.LASTFM_API_KEY,
-    clientID: process.env.LASTFM_API_KEY,
-    clientSecret: process.env.LASTFM_API_SECRET,
-    callbackURL: process.env.OAUTH_CALLBACKURL    
-},
-//what is the callback?
-function(accessToken, refreshToken, profile, cb) {
-    profile.accessToken = accessToken; //Store access token in the profile
-    return cb(null, profile); // Pass the profile to the callback
+// Configure Passport.js
+passport.use('oauth2', new OAuth2Strategy({
+  authorizationURL: 'https://www.last.fm/api/auth/?api_key=' + process.env.LASTFM_API_KEY,
+  tokenURL: 'https://ws.audioscrobbler.com/2.0/',
+  clientID: process.env.LASTFM_API_KEY,
+  clientSecret: process.env.LASTFM_API_SECRET,
+  callbackURL: process.env.OAUTH_CALLBACK_URL
+}, (accessToken, refreshToken, profile, cb) => {
+  // OAuth2 authentication logic
+  // In a real application, you would typically save user details to a database
+  // Here, we simply pass the profile to the callback
+  return cb(null, profile);
 }));
 
-passport.serializeUser((user, cb) => {
-    cb(null, user); //serialize user into the session
-})
+// Initialize Passport and restore authentication state, if any, from the session
+app.use(passport.initialize());
 
-passport.deserializeUser((obj, cb) => {
-    cb(null, obj); //deserialize user from the session
-})
+// Example route to initiate OAuth2 authentication
+app.get('/auth/lastfm', passport.authenticate('oauth2'));
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-})
+// OAuth2 callback route
+app.get('/auth/callback', passport.authenticate('oauth2', {
+  successRedirect: '/success',
+  failureRedirect: '/error'
+}));
 
-app.get('/auth/lastfm',
-    passport.authenticate('oauth2'));
-
-app.get('/auth/callback',
-    passport.authenticate('oauth2', { failureRedirect: '/' }), (req, res) => {
-        res.send('Successfully authenticated with Last.fm!');
+// Protected route for successful authentication
+app.get('/success', (req, res) => {
+  res.send('Successfully authenticated with Last.fm!');
 });
 
-//scrobble
-// app.post('/scrobble', (req, res) => {
-//     if (!req.user || !req.user.accessToken) {
-//       return res.status(401).send('User not authenticated');
-//     }
-  
-//     const { track, artist, timestamp } = req.body;
-//     const params = new URLSearchParams({
-//       method: 'track.scrobble',
-//       track,
-//       artist,
-//       timestamp,
-//       api_key: process.env.LASTFM_API_KEY,
-//       sk: req.user.accessToken,
-//       api_sig: generateApiSig({
-//         method: 'track.scrobble',
-//         track,
-//         artist,
-//         timestamp,
-//         api_key: process.env.LASTFM_API_KEY,
-//         sk: req.user.accessToken
-//       }),
-//       format: 'json'
-//     });
-  
-//     axios.post(`http://ws.audioscrobbler.com/2.0/?${params}`)
-//       .then(response => res.send(response.data))
-//       .catch(error => res.status(500).send('Error scrobbling track: ' + error.message));
-//   });
+// Error route for failed authentication
+app.get('/error', (req, res) => {
+  res.send('Authentication failed. Please try again.');
+});
 
-function generateApiSig(params) {
-    const keys = Object.keys(params).sort();
-    let string = '';
-    keys.forEach(key => {
-        string += key + params[key];
-    });
-    string += process.env.LASTFM_API_SECRET;
-    return
-require('crypto').createHash('md5').update(string).digest('hex');
-}
-
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}/`);
+// Create HTTPS server
+https.createServer(options, app).listen(port, () => {
+  console.log(`Server is running on https://localhost:${port}`);
 });
