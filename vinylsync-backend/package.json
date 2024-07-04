@@ -1,5 +1,5 @@
 {
-  "name": "vinylsync-backend",
+  "name": "vinylsync",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -7,14 +7,18 @@
     "start": "node server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "nd",
   "license": "ISC",
-  "description": "",
+  "description": "app to scrobble tracks to lastfm from audio recognition",
   "dependencies": {
     "axios": "^1.7.2",
     "body-parser": "^1.20.2",
     "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "oauth": "^0.10.0"
+    "express-session": "^1.18.0",
+    "oauth": "^0.10.0",
+    "passport": "^0.7.0",
+    "passport-oauth2": "^1.8.0"
   }
 }
