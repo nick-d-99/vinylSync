@@ -1,101 +1,52 @@
-// Required modules
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-const LastfmStrategy = require('passport-lastfm').Strategy;
-const dotenv = require('dotenv');
+require('./auth');
 
-// Load environment variables
-dotenv.config();
+// function isLoggedIn(req, res, next){
+//     req.user ? next() : res.sendStatus(401);
+// };
 
-// Initialize Express app
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware setup
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// app.use(session({ secret: "cats" })); //env secret so not in github
+// app.use(passport.initialize());
+// app.use(passport.session());
 
-// Session middleware
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'your_session_secret',
-    resave: true,
-    saveUninitialized: true
-}));
-
-// Passport initialization
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Passport strategy configuration (Last.fm OAuth)
-passport.use(new LastfmStrategy({
-    api_key: process.env.LASTFM_API_KEY,
-    secret: process.env.LASTFM_API_SECRET,
-    callbackURL: process.env.OAUTH_CALLBACK_URL
-}, (token, tokenSecret, profile, done) => {
-    console.log('Inside LastfmStrategy callback');
-    console.log('Token:', token);
-    console.log('Token Secret:', tokenSecret);
-    console.log('Profile:', profile);
-
-    // Error handling if no profile or profile ID is found
-    if (!profile || !profile.id) {
-        console.error('No profile found or profile ID is missing');
-        return done(new Error('No profile found or profile ID is missing.'));
-    }
-
-    // Simplified user handling (replace with your own logic)
-    const user = {
-        id: profile.id,
-        username: profile.username,
-        displayName: profile.displayName
-    };
-
-    return done(null, user);
-}));
-
-// Serialize user into session
-passport.serializeUser((user, done) => {
-    done(null, user.id);
-});
-
-// Deserialize user from session
-passport.deserializeUser((id, done) => {
-    // Replace with actual user retrieval logic
-    const user = {
-        id: id,
-        username: 'example_username',
-        displayName: 'Example User'
-    };
-    done(null, user);
-});
-
-// Routes
 app.get('/', (req, res) => {
-    res.send('Hello World!!!');
+    res.send('<a href="/auth/lastfm">Authenticate with LastFM</a>')
 });
 
+// app.get('/auth/lastfm',
+//     passport.authenticate('lastfm')
+// )
+
+// app.get('/protected', isLoggedIn, (req, res) => {
+//     res.send('Authentication success!');
+// });
+
+// app.get('/lastfm/callback', 
+//     passport.authenticate('lastfm', {
+//         successRedirect: '/protected',
+//         failureRedirect: '/auth/failure',
+//     })
+// );
+
+// app.get('auth/failure', (req, res) => {
+//     res.send('something went wrong :(');
+// });
+app.get('/failure', (req, res) => {
+    res.send('something went wrong..');
+});
+app.get('/success', (req, res) => {
+    res.send('Authenticated!');
+});
 app.get('/auth/lastfm', passport.authenticate('lastfm'));
-
-app.get('/auth/callback',
-    passport.authenticate('lastfm', { failureRedirect: '/login' }),
-    (req, res) => {
-        res.redirect('/');
-    }
-);
-
-app.get('/logout', (req, res) => {
-    req.logout();
-    res.redirect('/');
+app.get('/lastfm/callback', function(req, res, next){
+  passport.authenticate('lastfm', {failureRedirect:'/failure'}, function(err, user, sesh){
+    res.redirect('/success');
+  })(req, {} );
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Internal Server Error');
-});
-
-// Start server
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`listening on http://localhost:${port}`));
