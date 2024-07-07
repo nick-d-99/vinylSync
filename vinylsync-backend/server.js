@@ -1,56 +1,101 @@
-const https = require('https');
-const fs = require('fs');
+// Required modules
 const express = require('express');
+const session = require('express-session');
 const passport = require('passport');
-const OAuth2Strategy = require('passport-oauth2').Strategy;
-require('dotenv').config();
+const LastfmStrategy = require('passport-lastfm').Strategy;
+const dotenv = require('dotenv');
 
+// Load environment variables
+dotenv.config();
+
+// Initialize Express app
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// SSL/TLS options - replace with your certificate paths
-const options = {
-  key: fs.readFileSync('./server.key'),
-  cert: fs.readFileSync('./server.cert')
-};
+// Middleware setup
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Configure Passport.js
-passport.use('oauth2', new OAuth2Strategy({
-  authorizationURL: 'https://www.last.fm/api/auth/?api_key=' + process.env.LASTFM_API_KEY,
-  tokenURL: 'https://ws.audioscrobbler.com/2.0/',
-  clientID: process.env.LASTFM_API_KEY,
-  clientSecret: process.env.LASTFM_API_SECRET,
-  callbackURL: process.env.OAUTH_CALLBACK_URL
-}, (accessToken, refreshToken, profile, cb) => {
-  // OAuth2 authentication logic
-  // In a real application, you would typically save user details to a database
-  // Here, we simply pass the profile to the callback
-  return cb(null, profile);
+// Session middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your_session_secret',
+    resave: true,
+    saveUninitialized: true
 }));
 
-// Initialize Passport and restore authentication state, if any, from the session
+// Passport initialization
 app.use(passport.initialize());
+app.use(passport.session());
 
-// Example route to initiate OAuth2 authentication
-app.get('/auth/lastfm', passport.authenticate('oauth2'));
+// Passport strategy configuration (Last.fm OAuth)
+passport.use(new LastfmStrategy({
+    api_key: process.env.LASTFM_API_KEY,
+    secret: process.env.LASTFM_API_SECRET,
+    callbackURL: process.env.OAUTH_CALLBACK_URL
+}, (token, tokenSecret, profile, done) => {
+    console.log('Inside LastfmStrategy callback');
+    console.log('Token:', token);
+    console.log('Token Secret:', tokenSecret);
+    console.log('Profile:', profile);
 
-// OAuth2 callback route
-app.get('/auth/callback', passport.authenticate('oauth2', {
-  successRedirect: '/success',
-  failureRedirect: '/error'
+    // Error handling if no profile or profile ID is found
+    if (!profile || !profile.id) {
+        console.error('No profile found or profile ID is missing');
+        return done(new Error('No profile found or profile ID is missing.'));
+    }
+
+    // Simplified user handling (replace with your own logic)
+    const user = {
+        id: profile.id,
+        username: profile.username,
+        displayName: profile.displayName
+    };
+
+    return done(null, user);
 }));
 
-// Protected route for successful authentication
-app.get('/success', (req, res) => {
-  res.send('Successfully authenticated with Last.fm!');
+// Serialize user into session
+passport.serializeUser((user, done) => {
+    done(null, user.id);
 });
 
-// Error route for failed authentication
-app.get('/error', (req, res) => {
-  res.send('Authentication failed. Please try again.');
+// Deserialize user from session
+passport.deserializeUser((id, done) => {
+    // Replace with actual user retrieval logic
+    const user = {
+        id: id,
+        username: 'example_username',
+        displayName: 'Example User'
+    };
+    done(null, user);
 });
 
-// Create HTTPS server
-https.createServer(options, app).listen(port, () => {
-  console.log(`Server is running on https://localhost:${port}`);
+// Routes
+app.get('/', (req, res) => {
+    res.send('Hello World!!!');
+});
+
+app.get('/auth/lastfm', passport.authenticate('lastfm'));
+
+app.get('/auth/callback',
+    passport.authenticate('lastfm', { failureRedirect: '/login' }),
+    (req, res) => {
+        res.redirect('/');
+    }
+);
+
+app.get('/logout', (req, res) => {
+    req.logout();
+    res.redirect('/');
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Internal Server Error');
+});
+
+// Start server
+app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
 });
