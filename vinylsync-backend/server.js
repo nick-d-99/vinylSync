@@ -1,52 +1,33 @@
-const express = require('express');
-const session = require('express-session');
-const passport = require('passport');
-require('./auth');
+const express = require('express'); //import the express module for a ligthweight server
+const passport = require('passport'); //import the passport middleware to handle oauth with lastfm
+require('./auth'); //import the auth.js file to handle authentication
 
-// function isLoggedIn(req, res, next){
-//     req.user ? next() : res.sendStatus(401);
-// };
+const app = express(); //initialize instance of express application
+const port = process.env.PORT || 3000; //set port to be pulled from .env or 3000 if no port provided in .env
 
-const app = express();
-const port = process.env.PORT || 3000;
-
-// app.use(session({ secret: "cats" })); //env secret so not in github
-// app.use(passport.initialize());
-// app.use(passport.session());
-
+//creates the link titled Authenticate with LastFM with a reference link to the url specified below
 app.get('/', (req, res) => {
     res.send('<a href="/auth/lastfm">Authenticate with LastFM</a>')
 });
 
-// app.get('/auth/lastfm',
-//     passport.authenticate('lastfm')
-// )
+//sets up the url for authenticaiton and calls the passport.authenticate('lastfm') function
+app.get('/auth/lastfm', passport.authenticate('lastfm'));
 
-// app.get('/protected', isLoggedIn, (req, res) => {
-//     res.send('Authentication success!');
-// });
-
-// app.get('/lastfm/callback', 
-//     passport.authenticate('lastfm', {
-//         successRedirect: '/protected',
-//         failureRedirect: '/auth/failure',
-//     })
-// );
-
-// app.get('auth/failure', (req, res) => {
-//     res.send('something went wrong :(');
-// });
+//setup the failure url
 app.get('/failure', (req, res) => {
     res.send('something went wrong..');
 });
+
+//setup the success url
 app.get('/success', (req, res) => {
     res.send('Authenticated!');
 });
-app.get('/auth/lastfm', passport.authenticate('lastfm'));
+
+//handles the callback url specified the url on failure, and on success
 app.get('/lastfm/callback', function(req, res, next){
   passport.authenticate('lastfm', {failureRedirect:'/failure'}, function(err, user, sesh){
     res.redirect('/success');
   })(req, {} );
 });
 
-app.listen(port, () => console.log(`listening on http://localhost:${port}`));
+app.listen(port, () => console.log(`listening on http://localhost:${port}`)); //logs what port the server is running
